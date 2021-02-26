@@ -1,0 +1,13 @@
+firewalls:
+  - name: ParisFW
+    mgmt_ip: 10.11.12.13
+    port: 443
+    vdom: SSLVPN
+  - name: LondonFW
+    mgmt_ip: 14.15.16.17
+    port: 4444
+    vdom: FG-traffic
+  - name: MadridFW
+    mgmt_ip: 18.19.20.21
+    port: 441
+    vdom: None
