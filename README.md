@@ -43,6 +43,7 @@ pip3 install -r requirements.txt
 ```bash
 chmod +x FortiSSLVPNRevoker-API.py
 chmod +x FortiSSLVPNRevoker-SSH.py
+chmod +x fortidb.py
 ```
 
 ### To delete a single user:
