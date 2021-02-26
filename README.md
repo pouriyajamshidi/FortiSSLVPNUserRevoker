@@ -18,12 +18,7 @@ There is a function called ```sanitize_username``` in ```API``` version and a me
 
 ```Python``` has to be installed on the machine, running the scripts.
 
-```Paramiko```, ```Netmiko``` and ```FortiOSAPI``` are needed to run this script. You can install them using below command.
-
-```bash
-pip3 install -r requirements.txt
-```
-
+```Paramiko```, ```Netmiko``` and ```FortiOSAPI``` are needed to run this script. You can install them using below [guide](#intsall-the-required-modules).
 
 ## Usage
 
@@ -31,8 +26,19 @@ Both scripts can get either a ```username``` or a ```text file``` with the users
 
 **Make sure of the case sensitivity of users you want to delete. They should be the same as your firewalls unless you have modified the ```sanitize_username``` or ```SanitizeUsername```**.
 
+### Clone the repository
 
-### Make the scripts executable:
+```bash
+git clone https://github.com/pouriyajamshidi/FortiSSLVPNUserRevoker.git
+```
+
+### Intsall the required modules
+
+```bash
+pip3 install -r requirements.txt
+```
+
+### Make the scripts executable
 
 ```bash
 chmod +x FortiSSLVPNRevoker-API.py
