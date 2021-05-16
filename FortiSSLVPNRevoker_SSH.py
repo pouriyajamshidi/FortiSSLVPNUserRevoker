@@ -64,17 +64,6 @@ class FortiSSLVPN():
 
         return username
 
-    def QueryUsername(self, username):
-        '''Searches for username in userlist,
-            if found, passes the username to
-            DisplayGroups().'''
-
-        if username in self.userlist:
-            print(f"[✔️ ] {username} found!")
-            self.DisplayGroups(username)
-        else:
-            print(f"[❌] {username} not found.")
-
     def CheckLocalFile(self, devname):
         '''Checks for UserGroups file in current
             directory. If not found, fetches it.
@@ -398,7 +387,7 @@ class FortiSSLVPN():
 
         print(f"[✔ ] Update completed successfully")
 
-    def ReadYamlFile(self, yamlfile):
+    def read_yaml_file(self, yamlfile):
         '''
         Open YAML file to get firewall info
         '''
@@ -415,7 +404,7 @@ class FortiSSLVPN():
         '''Runs the sequence of methods required
             to revoke a user.'''
 
-        firewalls = self.ReadYamlFile("firewalls.yml")
+        firewalls = self.read_yaml_file("firewalls.yml")
 
         for fw in firewalls["firewalls"]:
             self.fwname = fw["name"]

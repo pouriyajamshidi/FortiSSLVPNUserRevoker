@@ -254,7 +254,7 @@ def fetch_credentials():
     return user, passwd
 
 
-def ReadYamlFile(yamlfile):
+def read_yaml_file(yamlfile):
     '''
     Open YAML file to get firewall info.
     returns info to the calling function.
@@ -322,7 +322,7 @@ def main():
 
     user, passwd = fetch_credentials()
     deletelist = get_user_input()
-    firewalls = ReadYamlFile("firewalls.yml")
+    firewalls = read_yaml_file("firewalls.yml")
     device = FortiOSAPI()
 
     for fw in firewalls["firewalls"]:
