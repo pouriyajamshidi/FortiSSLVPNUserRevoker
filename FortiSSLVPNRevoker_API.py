@@ -5,11 +5,13 @@ import signal
 import sys
 from os import getenv
 from os.path import isfile
+
 import requests
 from fortiosapi import FortiOSAPI
-from yaml import safe_load
-from fortidb import operate_on_DB, update_userstatus
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from yaml import safe_load
+
+from fortidb import operate_on_DB, update_userstatus
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -18,17 +20,16 @@ def signal_handler(frame, signal):
     """
     exit gracefully on SIGINT
     """
-    ENDCOLOR = '\033[0m'
+    ENDCOLOR = "\033[0m"
     print(ENDCOLOR)
     exit()
 
 
 def logger(programname):
     """
-    Logs script activity to 
+    Logs script activity to
     """
-    formatter = logging.Formatter(
-        "%(asctime)s %(name)-12s %(levelname)-8s %(message)s")
+    formatter = logging.Formatter("%(asctime)s %(name)-12s %(levelname)-8s %(message)s")
     logger = logging.getLogger(f"{programname}")
     hdlr = logging.FileHandler(f"{programname}.log")
     hdlr.setFormatter(formatter)
@@ -46,14 +47,14 @@ def guide_user(programname):
 
 
 def sanitize_username(username):
-    '''
+    """
     Format the received username
     to be like the way they're defined on firewall.
 
     :param: username
 
     returns formatted username
-    '''
+    """
 
     formatted_username = username.strip()
     print(f"[✔] Converting {username} to {formatted_username}")
@@ -79,8 +80,8 @@ def delete_user(device, userlist, groups, fwname, vdom):
         user_groups = display_and_remove_user_group(device, vdom, user, groups)
         operate_on_DB(dbname, user, fwname, "Deleting", user_groups)
 
-        data = {'name': user}
-        res = device.delete('user', 'local', vdom, data=data)
+        data = {"name": user}
+        res = device.delete("user", "local", vdom, data=data)
         res_code = res["status"]
 
         if res_code == "success":
@@ -99,8 +100,8 @@ def display_and_remove_user_group(device, vdom, user, groups):
     Displays the group(s) of a user and then passes the members
     that are NOT to be deleted to keep_users_in_group function
 
-    Fortigate's API removes a user from a group, by 
-    PUTing all the existing members but the one you 
+    Fortigate's API removes a user from a group, by
+    PUTing all the existing members but the one you
     want to remove, back in that group.
 
     :param device: Fortigate object to pass to keep_users_in_group function
@@ -129,7 +130,7 @@ def display_and_remove_user_group(device, vdom, user, groups):
                 user_groups.append(group_name)
 
                 for i in range(len(members)):
-                    if members[i]['name'] == member_name:
+                    if members[i]["name"] == member_name:
                         del members[i]
                         break
 
@@ -168,7 +169,7 @@ def get_all_groups(device, vdom):
     """
 
     print("[✔] Fetching all groups")
-    groups = device.get('user', 'group', vdom=vdom)
+    groups = device.get("user", "group", vdom=vdom)
 
     return groups["results"]
 
@@ -178,8 +179,8 @@ def find_and_remove_user_groups(device, vdom, groups, deletelist):
     finds the members that are NOT to be deleted and
     passes them to keep_users_in_group function
 
-    Fortigate's API removes a user from a group, by 
-    PUTing all the existing members but the one you 
+    Fortigate's API removes a user from a group, by
+    PUTing all the existing members but the one you
     want to remove, back in that group.
 
     :param device: pass to keep_users_in_group function
@@ -201,9 +202,8 @@ def find_and_remove_user_groups(device, vdom, groups, deletelist):
             member_name = member["name"]
 
             if member_name in deletelist:
-
                 for i in range(len(members)):
-                    if members[i]['name'] == member_name:
+                    if members[i]["name"] == member_name:
                         del members[i]
                         break
 
@@ -214,8 +214,8 @@ def keep_users_in_group(device, vdom, groupname, userslist):
     """
     retains/PUTs members that are to be kept on the firewall
 
-    Fortigate's API removes a user from a group, by 
-    PUTing all the existing members but the one you 
+    Fortigate's API removes a user from a group, by
+    PUTing all the existing members but the one you
     want to remove, back in that group.
 
     :param: device to pass to keep_users_in_group function
@@ -225,8 +225,8 @@ def keep_users_in_group(device, vdom, groupname, userslist):
     :param: userlist is a list of users to be kept
     """
 
-    data = {'name': groupname, 'member': userslist}
-    device.put('user', 'group', vdom=vdom, data=data)
+    data = {"name": groupname, "member": userslist}
+    device.put("user", "group", vdom=vdom, data=data)
 
 
 def fetch_credentials():
@@ -255,12 +255,12 @@ def fetch_credentials():
 
 
 def read_yaml_file(yamlfile):
-    '''
+    """
     Open YAML file to get firewall info.
     returns info to the calling function.
 
     :param: yaml file to look into
-    '''
+    """
 
     if isfile(yamlfile):
         with open(yamlfile, "r") as fwfile:
@@ -335,9 +335,9 @@ def main():
         print("-" * 75)
         print(f"[✔] Logging into {fwname} using {fwip} on port {fwport}")
 
-        device.login(host=firewall, username=user,
-                     password=passwd, verify=False,
-                     vdom=fwvdom)
+        device.login(
+            host=firewall, username=user, password=passwd, verify=False, vdom=fwvdom
+        )
         groups = get_all_groups(device, fwvdom)
 
         delete_user(device, deletelist, groups, fwname, fwvdom)

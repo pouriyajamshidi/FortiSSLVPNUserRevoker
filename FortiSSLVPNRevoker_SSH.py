@@ -8,16 +8,13 @@ import time
 from os.path import isfile
 
 from netmiko import ConnectHandler
-from netmiko.ssh_exception import (AuthenticationException,
-                                   NetMikoTimeoutException)
-from paramiko.ssh_exception import SSHException
+from netmiko.ssh_exception import AuthenticationException, NetMikoTimeoutException
 from yaml import safe_load
 
 from fortidb import operate_on_DB, update_userstatus
 
 
-class FortiSSLVPN():
-
+class FortiSSLVPN:
     def __init__(self, admin_username, admin_password):
         signal.signal(signal.SIGINT, self.SignalHandler)
         self.admin_username = admin_username
@@ -31,19 +28,19 @@ class FortiSSLVPN():
         self.batchCFGfilename = "BatchRevokeCFG.txt"
 
     def SignalHandler(self, frame, signal):
-        '''On ctrl+c, exit gracefully.'''
+        """On ctrl+c, exit gracefully."""
 
         print("\n[⚠️ ] Caught SIGINT\n[⚠️ ] Exiting...")
         exit(1)
 
     def SanitizeUsername(self, username):
-        '''Format the received username
-            to be like Fortigate's.'''
+        """Format the received username
+        to be like Fortigate's."""
 
         return username.strip()
 
     def HandleInputFile(self, filename):
-        '''Read received file and '''
+        """Read received file and"""
 
         with open(filename, "r") as file:
             for username in file:
@@ -52,10 +49,10 @@ class FortiSSLVPN():
                 self.user_from_list.append(username)
 
     def ChooseUsername(self, username):
-        '''Check whether username is entered
-            if so, pass it to SanitizeUsername()
-            else, show help message.
-            returns username.'''
+        """Check whether username is entered
+        if so, pass it to SanitizeUsername()
+        else, show help message.
+        returns username."""
 
         self.username = self.SanitizeUsername(username)
 
@@ -65,16 +62,15 @@ class FortiSSLVPN():
         return username
 
     def CheckLocalFile(self, devname):
-        '''Checks for UserGroups file in current
-            directory. If not found, fetches it.
-            If more than 1 UserGroups file is
-            found, SelectLocalFile() is called.'''
+        """Checks for UserGroups file in current
+        directory. If not found, fetches it.
+        If more than 1 UserGroups file is
+        found, SelectLocalFile() is called."""
 
         CWD = os.getcwd()
         print(f"[✔️ ] Looking for {devname} file in {CWD}")
 
-        file_pattern = re.compile(
-            r"UserGroups-{}".format(devname) + r"-\d{12}.txt")
+        file_pattern = re.compile(r"UserGroups-{}".format(devname) + r"-\d{12}.txt")
 
         for file in os.listdir():
             if file.endswith(".txt") and re.findall(file_pattern, file):
@@ -83,11 +79,10 @@ class FortiSSLVPN():
 
         if len(self.file_list) == 0:
             print("[❌] Could not find any UserGroups file")
-            user_choice = input(
-                "[⚠️ ] Do you want to fetch it from firewall (y/n)? ")
+            user_choice = input("[⚠️ ] Do you want to fetch it from firewall (y/n)? ")
 
             while len(user_choice) <= 0:
-                user_choice = input(f"[⚠️ ] Please choose (y/n)? ")
+                user_choice = input("[⚠️ ] Please choose (y/n)? ")
 
             user_choice = user_choice.lower().strip()
 
@@ -107,9 +102,9 @@ class FortiSSLVPN():
             return selected_file
 
     def SelectLocalFile(self, filelist, devname):
-        '''Receives files list from CheckLocalFile(),
-            displays their names and passes the
-            newest one to the AssessLocalFile() '''
+        """Receives files list from CheckLocalFile(),
+        displays their names and passes the
+        newest one to the AssessLocalFile()"""
 
         print("[✔️ ] Found files are:")
         filename_dic = {}
@@ -119,7 +114,7 @@ class FortiSSLVPN():
             if devname in file:
                 file_counter += 1
                 print(f"\t{file_counter}) " + file)
-                file_date = int(''.join(filter(str.isdigit, file)))
+                file_date = int("".join(filter(str.isdigit, file)))
                 filename_dic[file] = file_date
 
         selected_file = sorted(filename_dic)[-1]
@@ -129,39 +124,40 @@ class FortiSSLVPN():
         return selected_file
 
     def AssessLocalFile(self, file):
-        '''Receives file name from SelectLocalFile()
-            if it's older than 8 hours, asks user
-            whether to fetch a new one or continue
-            with current file. If user chooses
-            to fetch a new UserGroups file, then
-            GetGroupInfo() is called otherwise,
-            the program continues with the old file.'''
+        """Receives file name from SelectLocalFile()
+        if it's older than 8 hours, asks user
+        whether to fetch a new one or continue
+        with current file. If user chooses
+        to fetch a new UserGroups file, then
+        GetGroupInfo() is called otherwise,
+        the program continues with the old file."""
 
         current_time = time.strftime("%Y%m%d%H%M")
-        file_date = ''.join(filter(str.isdigit, file))
+        file_date = "".join(filter(str.isdigit, file))
 
         calculated_time = int(current_time) - int(file_date)
 
         if calculated_time >= 480:
             user_choice = input(
-                f"[⚠️ ] {file} is old. Do you want to fetch a new one (y/n)? ")
+                f"[⚠️ ] {file} is old. Do you want to fetch a new one (y/n)? "
+            )
 
             while len(user_choice) <= 0:
-                user_choice = input(f"[⚠️ ] Please choose (y/n)? ")
+                user_choice = input("[⚠️ ] Please choose (y/n)? ")
 
             if user_choice == "n":
-                print(f"[⚠️ ] WARNING - You chose to continue with an old file")
+                print("[⚠️ ] WARNING - You chose to continue with an old file")
             elif user_choice == "y":
                 selected_file = self.GetGroupInfo()
                 return selected_file
 
     def ExtractGroups(self, filename):
-        '''Extracts user and group info from
-            UserGroups config file and stores
-             users in userlist and groups in
-             usrdic. 
-             ### Fix the info storage method ###
-            '''
+        """Extracts user and group info from
+        UserGroups config file and stores
+         users in userlist and groups in
+         usrdic.
+         ### Fix the info storage method ###
+        """
 
         print(f"[✔️ ] Opening {filename} for analysis.")
 
@@ -175,16 +171,21 @@ class FortiSSLVPN():
                 if "cn=" in line.lower():
                     continue
                 if "set member" in line:
-                    user = line.strip().replace("set member ", "").replace('"', "").split(" ")
+                    user = (
+                        line.strip()
+                        .replace("set member ", "")
+                        .replace('"', "")
+                        .split(" ")
+                    )
                     self.usrdic[group] = user
                     self.userlist.append(user)
 
     def DisplayGroups(self, user, filename):
-        '''Passes file to ExtractGroups()
-            If user is not found, exits,
-            otherwise the groups will be shown
-            and usrgroups list will be appended
-            then it'll get returned'''
+        """Passes file to ExtractGroups()
+        If user is not found, exits,
+        otherwise the groups will be shown
+        and usrgroups list will be appended
+        then it'll get returned"""
 
         lncounter = 0
         usrgroups = []
@@ -209,25 +210,25 @@ class FortiSSLVPN():
         return usrgroups
 
     def GetGroupInfo(self):
-        '''SSH and get UserGroup file from firewall.
-            returns filename.'''
+        """SSH and get UserGroup file from firewall.
+        returns filename."""
 
         self.SSHtoDevice()
         print(f"[✔️ ] Gathering User and Group information from {self.fwname}")
 
         if self.fwvdom != "None":
+            self.ssh_con.send_command("config vdom", expect_string=r"#", delay_factor=1)
             self.ssh_con.send_command(
-                "config vdom", expect_string=r"#", delay_factor=1)
-            self.ssh_con.send_command(
-                f"edit {self.fwvdom}", expect_string=r"#", delay_factor=1)
+                f"edit {self.fwvdom}", expect_string=r"#", delay_factor=1
+            )
         output = self.ssh_con.send_command(
-            "show user group", expect_string=r"#", delay_factor=1)
+            "show user group", expect_string=r"#", delay_factor=1
+        )
         self.ssh_con.send_command("end", expect_string=r"#", delay_factor=1)
 
         print("[✔️ ] Output gathered.")
 
-        filename = f"UserGroups-{self.fwname}-" + \
-            time.strftime("%Y%m%d%H%M") + ".txt"
+        filename = f"UserGroups-{self.fwname}-" + time.strftime("%Y%m%d%H%M") + ".txt"
         print(f"[✔️ ] Saving output in {filename}.")
 
         with open(filename, "w") as file:
@@ -236,14 +237,14 @@ class FortiSSLVPN():
         return filename
 
     def SSHtoDevice(self):
-        '''SSH to device.'''
+        """SSH to device."""
 
         firewall = {
-            'device_type': 'fortinet',
-            'ip': self.fwip,
-            'port': self.fwport,
-            'username': self.admin_username,
-            'password': self.admin_password,
+            "device_type": "fortinet",
+            "ip": self.fwip,
+            "port": self.fwport,
+            "username": self.admin_username,
+            "password": self.admin_password,
         }
 
         print(f"[✔️ ] Initiating connection to {self.fwip}:{self.fwport}")
@@ -251,16 +252,13 @@ class FortiSSLVPN():
         try:
             self.ssh_con = ConnectHandler(**firewall)
             print(f"[✔️ ] Connected to {self.fwip}:{self.fwport}")
-        except (AuthenticationException) as err:
+        except AuthenticationException as err:
             print(err)
             return 1
-        except (NetMikoTimeoutException) as err:
+        except NetMikoTimeoutException as err:
             print(err)
             return 1
-        except (EOFError) as err:
-            print(err)
-            return 1
-        except (SSHException) as err:
+        except EOFError as err:
             print(err)
             return 1
         except Exception as err:
@@ -268,7 +266,7 @@ class FortiSSLVPN():
             return 1
 
     def RevokeUser(self, username, groups):
-        '''Sends a set of commands to revoke the user'''
+        """Sends a set of commands to revoke the user"""
 
         operate_on_DB(self.dbname, username, self.fwname, "Deleting", groups)
 
@@ -277,26 +275,30 @@ class FortiSSLVPN():
         print(f"[✔️ ] Revoking {username} in {self.fwname}")
 
         if self.fwvdom != "None":
+            self.ssh_con.send_command("config vdom", expect_string=r"#", delay_factor=1)
             self.ssh_con.send_command(
-                "config vdom", expect_string=r"#", delay_factor=1)
-            self.ssh_con.send_command(
-                f"edit {self.fwvdom}", expect_string=r"#", delay_factor=1)
+                f"edit {self.fwvdom}", expect_string=r"#", delay_factor=1
+            )
         self.ssh_con.send_command(
-            "config user group ", expect_string=r"#", delay_factor=1)
+            "config user group ", expect_string=r"#", delay_factor=1
+        )
 
         for group in groups:
             self.ssh_con.send_command(
-                f"edit {group} ", expect_string=r"#", delay_factor=1)
+                f"edit {group} ", expect_string=r"#", delay_factor=1
+            )
             self.ssh_con.send_command(
-                f"unselect member {username} ", expect_string=r"#", delay_factor=1)
-            self.ssh_con.send_command(
-                "next", expect_string=r"#", delay_factor=1)
+                f"unselect member {username} ", expect_string=r"#", delay_factor=1
+            )
+            self.ssh_con.send_command("next", expect_string=r"#", delay_factor=1)
 
         self.ssh_con.send_command("end", expect_string=r"#", delay_factor=1)
         self.ssh_con.send_command(
-            "config user local ", expect_string=r"#", delay_factor=1)
+            "config user local ", expect_string=r"#", delay_factor=1
+        )
         self.ssh_con.send_command(
-            f"delete {username}", expect_string=r"#", delay_factor=1)
+            f"delete {username}", expect_string=r"#", delay_factor=1
+        )
         self.ssh_con.send_command("end", expect_string=r"#", delay_factor=1)
         self.ssh_con.send_command("end", expect_string=r"#", delay_factor=1)
 
@@ -305,16 +307,16 @@ class FortiSSLVPN():
         print(f"[✔️ ] Revoked {username} in {self.fwname}")
 
     def InitCFG(self):
-        '''Create the initial config file'''
+        """Create the initial config file"""
 
         with open(self.batchCFGfilename, "w") as cfgfile:
             cfgfile.write("config vdom\n")
             cfgfile.write(f"edit {self.fwvdom} \n")
 
     def GenerateCFG(self, username, groups):
-        '''Config generator for device
-            in case you wanna see the commands
-            that are being sent'''
+        """Config generator for device
+        in case you wanna see the commands
+        that are being sent"""
 
         with open(self.batchCFGfilename, "a") as cfgfile:
             cfgfile.write("config user group \n")
@@ -330,27 +332,26 @@ class FortiSSLVPN():
             cfgfile.write("end\n")
 
     def FinalizeCFG(self):
-        '''finalize the config file'''
+        """finalize the config file"""
 
         with open(self.batchCFGfilename, "a") as cfgfile:
             cfgfile.write("end\n")
 
     def ApplyCFG(self):
-        '''Sends contents of cfg file to revoke the users'''
+        """Sends contents of cfg file to revoke the users"""
 
         self.SSHtoDevice()
 
         print(f"[✔ ] Revoking users in {self.fwname}")
 
-        self.ssh_con.send_config_from_file(
-            self.batchCFGfilename, delay_factor=1)
+        self.ssh_con.send_config_from_file(self.batchCFGfilename, delay_factor=1)
 
         print(f"[✔ ] Revoked users in {self.fwname}")
 
     def UserBatch(self, users):
-        '''If file is given instead of username
-            then it is a batch job.
-            get the list and perform revoke operation.'''
+        """If file is given instead of username
+        then it is a batch job.
+        get the list and perform revoke operation."""
 
         user_list = []
 
@@ -364,8 +365,7 @@ class FortiSSLVPN():
 
             if groups:
                 user_list.append(username)
-                operate_on_DB(self.dbname, username,
-                              self.fwname, "Deleting", groups)
+                operate_on_DB(self.dbname, username, self.fwname, "Deleting", groups)
                 self.GenerateCFG(username, groups)
             else:
                 continue
@@ -376,21 +376,21 @@ class FortiSSLVPN():
             self.BatchUpdateDB(user_list)
 
     def BatchUpdateDB(self, userlist):
-        '''Update status of users populated in
-            UserBatch method'''
+        """Update status of users populated in
+        UserBatch method"""
 
-        print(f"[✔ ] Updating users status in Database")
+        print("[✔ ] Updating users status in Database")
 
         for user in userlist:
             print(f"[✔ ] Updating {user} in {self.fwname}")
             update_userstatus(self.dbname, "Deleted", user, self.fwname)
 
-        print(f"[✔ ] Update completed successfully")
+        print("[✔ ] Update completed successfully")
 
     def read_yaml_file(self, yamlfile):
-        '''
+        """
         Open YAML file to get firewall info
-        '''
+        """
 
         if isfile(yamlfile):
             with open(yamlfile, "r") as fwfile:
@@ -401,8 +401,8 @@ class FortiSSLVPN():
             exit(1)
 
     def Run(self, user):
-        '''Runs the sequence of methods required
-            to revoke a user.'''
+        """Runs the sequence of methods required
+        to revoke a user."""
 
         firewalls = self.read_yaml_file("firewalls.yml")
 
@@ -426,8 +426,8 @@ class FortiSSLVPN():
 if __name__ == "__main__":
 
     def CheckAdminCreds():
-        '''Get username and password
-            from user and check it.'''
+        """Get username and password
+        from user and check it."""
         import getpass
         import hashlib
 
@@ -456,7 +456,7 @@ if __name__ == "__main__":
         exit(1)
 
     def start():
-        '''Starts the program'''
+        """Starts the program"""
 
         admin_username, admin_password = CheckAdminCreds()
 
